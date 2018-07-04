@@ -1,0 +1,122 @@
+package com.kankanla.e560.m180704camera;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
+import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Surface;
+import android.view.TextureView;
+
+import java.util.Arrays;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 88);
+            return;
+        } else {
+            camera();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        camera();
+    }
+
+    protected void camera() {
+        final CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
+        final TextureView textureView = findViewById(R.id.textureView);
+        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                final Surface sss = new Surface(surface);
+                try {
+                    cameraManager.openCamera("0", new CameraDevice.StateCallback() {
+                        @Override
+                        public void onOpened(@NonNull final CameraDevice camera) {
+                            try {
+                                camera.createCaptureSession(Arrays.asList(sss), new CameraCaptureSession.StateCallback() {
+                                    @Override
+                                    public void onConfigured(@NonNull CameraCaptureSession session) {
+
+                                        try {
+                                            CaptureRequest.Builder captureRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                                            captureRequest.addTarget(sss);
+                                            session.setRepeatingRequest(captureRequest.build(), new CameraCaptureSession.CaptureCallback() {
+                                                @Override
+                                                public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
+                                                    super.onCaptureStarted(session, request, timestamp, frameNumber);
+                                                }
+                                            }, null);
+
+                                        } catch (CameraAccessException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+
+                                    }
+                                }, null);
+                            } catch (CameraAccessException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onDisconnected(@NonNull CameraDevice camera) {
+
+                        }
+
+                        @Override
+                        public void onError(@NonNull CameraDevice camera, int error) {
+
+                        }
+                    }, null);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+            }
+        });
+    }
+}
